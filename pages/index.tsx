@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Header } from "./components/Header";
 import { SideMenu } from "./components/SideMenu";
 import { EditFlame } from "./components/EditFlame";
+import { css } from "@/styled-system/css";
 
 export interface Condition {
   width: number;
@@ -9,6 +10,7 @@ export interface Condition {
   x: number;
   y: number;
   referenceTextId: string;
+  isEditing: boolean;
 }
 
 export interface EditText {
@@ -17,17 +19,19 @@ export interface EditText {
   x: number;
   y: number;
   scale: number;
+  text: string;
 }
 
 export default function Home() {
   const mainContentRef = useRef<HTMLDivElement>(null);
-  const [editTexts, setEditTexts] = useState([
+  const [editTexts, setEditTexts] = useState<EditText[]>([
     {
       id: "data-1",
       height: 21.6,
       x: 43.2,
       y: 69,
       scale: 1,
+      text: "テキストを挿入",
     },
     {
       id: "data-2",
@@ -35,31 +39,43 @@ export default function Home() {
       x: 0,
       y: 0,
       scale: 1,
+      text: "テキストを挿入",
+    },
+  ]);
+
+  const [contentEdit, setContentEdit] = useState([
+    {
+      id: "data-1",
+      isEditing: false,
+    },
+    {
+      id: "data-2",
+      isEditing: false,
     },
   ]);
 
   const [contentScale, _] = useState(2);
-  const [condition, setCondition] = useState({
+  const [condition, setCondition] = useState<Condition>({
     width: 0,
     height: 0,
     x: 0,
     y: 0,
     referenceTextId: "",
+    isEditing: false,
   });
 
-  useEffect(() => {
-    const newEditTexts = editTexts.map((editText) => {
-      if (editText.id === condition.referenceTextId) {
-        return {
-          ...editText,
-          scale: condition.height / (editText.height * contentScale),
-        };
-      }
-
-      return editText;
-    });
-    setEditTexts(newEditTexts);
-  }, [condition]);
+  const handleDoubleClick = () => {
+    setContentEdit((prev) =>
+      prev.map((prevText) =>
+        prevText.id === condition.referenceTextId
+          ? {
+              ...prevText,
+              isEditing: true,
+            }
+          : prevText
+      )
+    );
+  };
 
   return (
     <div>
@@ -100,30 +116,65 @@ export default function Home() {
                   width: "fit-content",
                 }}
               >
-                <p
+                <div
                   style={{
                     fontSize: "16px",
                     transformOrigin: "0 0",
                     lineHeight: "22px",
                     transform: `scale(${editText.scale})`,
                     margin: 0,
+                    border: contentEdit.find((edit) => edit.id === editText.id)
+                      ?.isEditing
+                      ? "1px solid red"
+                      : "none",
                   }}
+                  className={css({
+                    "&:focus": {
+                      outline: "none",
+                    },
+                  })}
+                  onClick={(e: React.MouseEvent) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setCondition({
+                      width: rect.width > 0 ? rect.width : 0,
+                      height: rect.height > 0 ? rect.height : 0,
+                      x: editText.x,
+                      y: editText.y,
+                      referenceTextId: editText.id,
+                      isEditing: true,
+                    });
+                  }}
+                  onBlur={() =>
+                    setContentEdit((prev) =>
+                      prev.map((prevText) =>
+                        prevText.id === condition.referenceTextId
+                          ? {
+                              ...prevText,
+                              isEditing: false,
+                            }
+                          : prevText
+                      )
+                    )
+                  }
+                  suppressContentEditableWarning={true}
+                  contentEditable={
+                    contentEdit.find((edit) => edit.id === editText.id)
+                      ?.isEditing
+                  }
                 >
-                  <span
-                    onClick={(e: React.MouseEvent) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setCondition({
-                        width: rect.width,
-                        height: rect.height,
-                        x: editText.x,
-                        y: editText.y,
-                        referenceTextId: editText.id,
-                      });
+                  <p
+                    style={{
+                      userSelect: "none",
                     }}
+                    className={css({
+                      "&:focus": {
+                        outline: "none",
+                      },
+                    })}
                   >
-                    こんにちは
-                  </span>
-                </p>
+                    {editText.text}
+                  </p>
+                </div>
               </div>
             ))}
             <EditFlame
@@ -133,6 +184,8 @@ export default function Home() {
               editTexts={editTexts}
               setEditTexts={setEditTexts}
               contentRef={mainContentRef}
+              handleDoubleClick={handleDoubleClick}
+              contentEdit={contentEdit}
             />
           </div>
         </div>
