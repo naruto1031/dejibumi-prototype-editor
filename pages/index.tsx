@@ -132,6 +132,7 @@ export default function Home() {
               setCondition={setCondition}
               editTexts={editTexts}
               setEditTexts={setEditTexts}
+              contentRef={mainContentRef}
             />
           </div>
         </div>

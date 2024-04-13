@@ -1,10 +1,11 @@
-import { Dispatch, FC, SetStateAction } from "react";
+import { Dispatch, FC, RefObject, SetStateAction, useState } from "react";
 import { Condition, EditText } from "..";
 
 interface Props {
   condition: Condition;
   contentScale: number;
   editTexts: EditText[];
+  contentRef: RefObject<HTMLDivElement>;
   setCondition: Dispatch<SetStateAction<Condition>>;
   setEditTexts: Dispatch<SetStateAction<EditText[]>>;
 }
@@ -15,33 +16,49 @@ export const EditFlame: FC<Props> = ({
   setCondition,
   editTexts,
   setEditTexts,
+  contentRef,
 }) => {
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const updatePosition = (newX: number, newY: number) => {
+    setCondition((prev) => ({
+      ...prev,
+      x: prev.x - newX / contentScale,
+      y: prev.y - newY / contentScale,
+    }));
+
+    setEditTexts((prev) => prev.map((editText) => ({
+      ...editText,
+      x: editText.id === condition.referenceTextId ? editText.x - newX / contentScale : editText.x,
+      y: editText.id === condition.referenceTextId ? editText.y - newY / contentScale : editText.y,
+    })));
+  };
+
+  const updateSize = (xChange: number, heightRatios: number) => {
+    const newWidth = condition.width - xChange;
+    const newHeight = newWidth * heightRatios;
+
+    setCondition((prev) => ({
+      ...prev,
+      width: newWidth,
+      height: newHeight,
+    }));
+
+    setEditTexts((prev) => prev.map((editText) => ({
+      ...editText,
+      scale: editText.id === condition.referenceTextId ? newHeight / editText.height : editText.scale,
+    })));
+  };
+
+  const handleDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
     let prevX = e.clientX;
-    const heightRatios = condition.height / condition.width;
+    let prevY = e.clientY;
 
-    document.onmousemove = (e: MouseEvent) => {
-      const calcHeight = (condition.width - (prevX - e.clientX)) * heightRatios;
-      const x = condition.width - (prevX - e.clientX);
-      const y = calcHeight;
-
-      setCondition((prev) => ({
-        ...prev,
-        width: x,
-        height: y,
-      }));
-
-      const newEditTexts = editTexts.map((editText) => {
-        if (editText.id === condition.referenceTextId) {
-          return {
-            ...editText,
-            scale: condition.height / editText.height,
-          };
-        }
-
-        return editText;
-      });
-      setEditTexts(newEditTexts);
+    document.onmousemove = (ev: MouseEvent) => {
+      const newX = prevX - ev.clientX;
+      const newY = prevY - ev.clientY;
+      updatePosition(newX, newY);
+      prevX = ev.clientX;
+      prevY = ev.clientY;
     };
 
     document.onmouseup = () => {
@@ -49,6 +66,23 @@ export const EditFlame: FC<Props> = ({
       document.onmouseup = null;
     };
   };
+
+  const handleResize = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    const prevX = e.clientX;
+    const heightRatios = condition.height / condition.width;
+
+    document.onmousemove = (ev: MouseEvent) => {
+      const xChange = prevX - ev.clientX;
+      updateSize(xChange, heightRatios);
+    };
+
+    document.onmouseup = () => {
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
+
   return (
     <div
       style={{
@@ -61,6 +95,7 @@ export const EditFlame: FC<Props> = ({
         transform: `translate(${condition.x}px, ${condition.y}px)`,
         zIndex: 100,
       }}
+      onMouseDown={handleDrag}
     >
       <div
         style={{
@@ -79,8 +114,9 @@ export const EditFlame: FC<Props> = ({
             borderRadius: "50%",
             cursor: "se-resize",
             backgroundColor: "#726464",
+            zIndex: 100,
           }}
-          onMouseDown={handleMouseDown}
+          onMouseDown={handleResize}
         />
       </div>
     </div>
