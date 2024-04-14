@@ -1,5 +1,5 @@
 import { Dispatch, FC, RefObject, SetStateAction, useState } from "react";
-import { Condition, EditText } from "..";
+import { Condition, EditText } from "../pages";
 import { useOutsideClick } from "../hooks/useOutsideClick";
 
 interface Props {

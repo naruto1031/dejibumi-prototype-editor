@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Header } from "./components/Header";
-import { SideMenu } from "./components/SideMenu";
-import { EditFlame } from "./components/EditFlame";
 import { css } from "@/styled-system/css";
+import { EditFlame, Header, SideMenu } from "@/components";
 
 export interface Condition {
   width: number;
@@ -161,6 +159,8 @@ export default function Home() {
                     contentEdit.find((edit) => edit.id === editText.id)
                       ?.isEditing
                   }
+
+                  onInput={(e: React.FormEvent) => {console.log(e.currentTarget.textContent)}}
                 >
                   <p
                     style={{
