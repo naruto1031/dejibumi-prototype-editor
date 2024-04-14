@@ -40,6 +40,7 @@ export default function Home() {
       text: "テキストを挿入",
     },
   ]);
+  const [currentText , setCurrentText] = useState<string | null>(null)
 
   const [contentEdit, setContentEdit] = useState([
     {
@@ -52,7 +53,7 @@ export default function Home() {
     },
   ]);
 
-  const [contentScale, _] = useState(2);
+  const [contentScale, setCurrentScale] = useState(2);
   const [condition, setCondition] = useState<Condition>({
     width: 0,
     height: 0,
@@ -66,18 +67,54 @@ export default function Home() {
     setContentEdit((prev) =>
       prev.map((prevText) =>
         prevText.id === condition.referenceTextId
-          ? {
-              ...prevText,
-              isEditing: true,
-            }
+          ? { ...prevText, isEditing: true }
           : prevText
       )
     );
   };
 
+  const handleClick = (editText: EditText, e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCondition({
+      width: rect.width > 0 ? rect.width : 0,
+      height: rect.height > 0 ? rect.height : 0,
+      x: editText.x,
+      y: editText.y,
+      referenceTextId: editText.id,
+      isEditing: true,
+    });
+  };
+
+  const handleBlur = (id: string) => {
+    setContentEdit((prev) =>
+      prev.map((prevText) =>
+        prevText.id === id
+          ? { ...prevText, isEditing: false, text: currentText}
+          : prevText
+      )
+    );
+    setCurrentText(null)
+  };
+
+  const handleInput = (id: string, e: React.FormEvent) => {
+    debugger
+    const target = e.target as HTMLDivElement;
+    const text = target.textContent;
+    setCurrentText(text)
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div>
-      <Header />
+      <Header
+        currentScale={contentScale}
+        setCurrentScale={setCurrentScale}
+      />
       <main
         style={{
           display: "flex",
@@ -131,46 +168,20 @@ export default function Home() {
                       outline: "none",
                     },
                   })}
-                  onClick={(e: React.MouseEvent) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setCondition({
-                      width: rect.width > 0 ? rect.width : 0,
-                      height: rect.height > 0 ? rect.height : 0,
-                      x: editText.x,
-                      y: editText.y,
-                      referenceTextId: editText.id,
-                      isEditing: true,
-                    });
-                  }}
-                  onBlur={() =>
-                    setContentEdit((prev) =>
-                      prev.map((prevText) =>
-                        prevText.id === condition.referenceTextId
-                          ? {
-                              ...prevText,
-                              isEditing: false,
-                            }
-                          : prevText
-                      )
-                    )
-                  }
+                  onClick={(e) => handleClick(editText, e)}
+                  onBlur={() => handleBlur(editText.id)}
                   suppressContentEditableWarning={true}
                   contentEditable={
                     contentEdit.find((edit) => edit.id === editText.id)
                       ?.isEditing
                   }
-
-                  onInput={(e: React.FormEvent) => {console.log(e.currentTarget.textContent)}}
+                  onInput={(e) => handleInput(editText.id, e)}
+                  onKeyDown={handleKeyDown}
                 >
                   <p
                     style={{
                       userSelect: "none",
                     }}
-                    className={css({
-                      "&:focus": {
-                        outline: "none",
-                      },
-                    })}
                   >
                     {editText.text}
                   </p>
